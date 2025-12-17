@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 import csv
+import pandas as pd
+import boto3
 
 URL = "https://immobilier-au-senegal.com/"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -39,12 +41,28 @@ def save_to_csv(properties: list[dict], filename: str):
         writer.writerows(properties)
     print(f"CSV généré : {filename}")
 
+
+def upload_file_s3(file_path, bucket_name, object_name=None):
+    if object_name is None:
+        object_name = file_path
+
+    s3 = boto3.client("s3")
+    s3.upload_file(file_path, bucket_name, object_name)
+
+
+# Exemple d'utilisation
+file_path = "data/file.json"
+file_name = "file.json"
+MY_BUCKET_NAME = "m2dsia-mengue-meildna"
+
+
 def main():
     html = fetch_html(URL)
     divs = parse_html(html)
     print(f"{len(divs)} biens trouvés")
     properties = extract_properties(divs)
     save_to_csv(properties, "immobilier_senegal.csv")
+    upload_file_s3("immobilier_senegal.csv", MY_BUCKET_NAME, "immobilier_senegal.csv")
 
 if __name__ == "__main__":
     main()
